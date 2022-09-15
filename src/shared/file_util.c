@@ -10,6 +10,11 @@ int open_file(char* rel_path, int flags, mode_t mode){
    in future function calls
    */
   int fd = open(rel_path, flags, mode);
+  if (fd == -1){
+   printf("File: < %s > can't be opened\n", rel_path);
+   err_and_leave("", 3);
+  }
+  printf("%d\n", fd);
   return fd;
 }
 
