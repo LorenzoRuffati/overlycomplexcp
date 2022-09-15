@@ -159,6 +159,7 @@ int main(int argc, char **argv)
   
   close(fd_in);
   close(fd_out);
+  use_pipe(settings);
 
   return 0;
 }
