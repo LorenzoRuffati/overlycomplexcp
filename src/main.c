@@ -1,27 +1,17 @@
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
 
-typedef enum {SENDER, RECEIVER} role_t;
-typedef enum {PIPE, QUEUE, SHARED} ipc_t;
+#include "shared/types.h"
+#include "shared/file_util.h"
+#include "pipe/pipe.h"
 
-
-typedef struct {
-  char* password; // The shared code to allow sender and receiver to coordinate
-  char* filename; // The file to be used either to write to or to send over ipc
-  role_t role; // Whether the program acts as sender or receiver
-  ipc_t method;
-  int max_pages;
-} setting_t;
-
-void err_and_leave(char* messg, int code){
-  fprintf(stderr, "%s\n", messg);
-  exit(code);
-}
 
 int main(int argc, char **argv)
 {
@@ -148,5 +138,27 @@ int main(int argc, char **argv)
   } else {
     printf("Role: %s\nMethod: %s\nPassword: %s\nFile: %s\n", role_str, method_str, settings.password, settings.filename);
   }
+
+  /*I want to read 5 bytes from filename and write them to password.txt*/
+  int fd_in = open_file(settings.filename, O_RDONLY, 0);
+  
+  char* out_name;
+  int len_pass = strlen(settings.password);
+  out_name = malloc(len_pass+5); // {'h', 'i', \0}, {'.','t','x','t',\0}
+  strcpy(out_name, settings.password);
+  strcat(out_name, ".txt");
+  printf("%s\n", out_name);
+
+  int fd_out = open_file(out_name, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+  char* bfr = calloc(1, 6);
+
+  int read_n = read_chunk(fd_in, 6, 5, bfr);
+  printf("%d\n", read_n);
+  printf("%s\n", bfr);
+  write_chunk(fd_out, 5, bfr);
+  
+  close(fd_in);
+  close(fd_out);
+
   return 0;
 }
