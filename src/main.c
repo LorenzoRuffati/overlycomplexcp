@@ -1,6 +1,3 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -139,27 +136,14 @@ int main(int argc, char **argv)
     printf("Role: %s\nMethod: %s\nPassword: %s\nFile: %s\n", role_str, method_str, settings.password, settings.filename);
   }
 
-  /*I want to read 5 bytes from filename and write them to password.txt*/
-  int fd_in = open_file(settings.filename, O_RDONLY, 0);
+  switch (settings.method)
+  {
+  case PIPE:
+    return use_pipe(settings);
+    break;
   
-  char* out_name;
-  int len_pass = strlen(settings.password);
-  out_name = malloc(len_pass+5); // {'h', 'i', \0}, {'.','t','x','t',\0}
-  strcpy(out_name, settings.password);
-  strcat(out_name, ".txt");
-  printf("%s\n", out_name);
-
-  int fd_out = open_file(out_name, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-  char* bfr = calloc(1, 6);
-
-  int read_n = read_chunk(fd_in, 6, 5, bfr);
-  printf("%d\n", read_n);
-  printf("%s\n", bfr);
-  write_chunk(fd_out, 5, bfr);
-  
-  close(fd_in);
-  close(fd_out);
-  use_pipe(settings);
-
+  default:
+    break;
+  }
   return 0;
 }
