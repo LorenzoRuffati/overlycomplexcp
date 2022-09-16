@@ -14,7 +14,7 @@ int open_file(char* rel_path, int flags, mode_t mode){
    printf("File: < %s > can't be opened\n", rel_path);
    err_and_leave("", 3);
   }
-  printf("%d\n", fd);
+  //printf("%d\n", fd);
   return fd;
 }
 
@@ -46,6 +46,7 @@ size_t write_chunk(int fd_o, size_t chunk_size, char* buffer){
    FILE* fstream = fdopen(fd, "a");
    //fseek(fstream, 0, SEEK_END);
    size_t bts_written = fwrite(buffer, 1, chunk_size, fstream);
+   //printf("%d written\n", bts_written);
    fclose(fstream);
    return bts_written; 
 }
