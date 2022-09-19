@@ -8,6 +8,7 @@
 #include "shared/types.h"
 #include "shared/file_util.h"
 #include "pipe/pipe.h"
+#include "shm/shm.h"
 
 
 int main(int argc, char **argv)
@@ -141,7 +142,9 @@ int main(int argc, char **argv)
   case PIPE:
     return use_pipe(settings);
     break;
-  
+  case SHARED:
+    return use_shared(settings);
+    break;
   default:
     break;
   }
