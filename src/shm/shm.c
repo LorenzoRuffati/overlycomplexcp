@@ -17,7 +17,7 @@ mmap_creat_ret_t init_or_create_mmap(char* passwd){
             fdm = shm_open(path, O_RDWR, 0);
             coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
             printf("mmp sync %p %d\n", str, errno);
-            return (mmap_creat_ret_t){str, fdm};
+            return (mmap_creat_ret_t){str, fdm, path};
         } else {
             err_and_leave("Error when accessing shared memory", 5);
         }
@@ -311,20 +311,19 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     lock_sync_file(settings.password, BASEPATHSHM);
     
     void *ret = NULL;
+    printf("Waiting for child thread\n");
     pthread_join(child_thread, &ret);
     printf("Joined thread\n");
 
     printf("del lock\n");
     unlink_lock(settings.password, BASEPATHSHM);
-    ftruncate(mmap_info.fd_shared, 0);
     printf("unlink shm\n");
     int r_unl = shm_unlink(mmap_info.pat);
     printf("unlkshm %d %d\n", r_unl, errno);
     pthread_cond_broadcast(&(shr_str->writer_ready.cond));
-    printf("Waiting for child thread\n");
     munmap(shr_str, sizeof(coord_struct));
     shm_unlink(path);
-    return 1;
+    return 0;
 }
 
 int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
