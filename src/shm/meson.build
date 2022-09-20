@@ -1,1 +1,1 @@
-sources += files('shm.c')
+sources += files('shm.c', 'sync_util.c')
