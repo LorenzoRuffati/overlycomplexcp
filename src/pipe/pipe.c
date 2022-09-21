@@ -3,12 +3,14 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include "pipe.h"
 #include "../shared/file_util.h"
 
 #define BUFFSZ 256
 
 int use_pipe(setting_t settings){
+    printf("usp %s\n", settings.password);
     switch (settings.role) {
         case SENDER:
             return pipe_sender(settings);
@@ -22,8 +24,25 @@ int use_pipe(setting_t settings){
     return 0;
 }
 
-void create_fifo(char* path){
-    int ret = mkfifo(path, 0666);
+char* fifo_name(char* passwd){
+    printf("ffn %s\n", passwd);
+    char* myfifo = "/tmp/myfifo_";
+    // We have passwd
+    // We have myfifo
+    // new_string
+    // copy myfifo into new_string
+    // concatenate passwd to new_string
+    char* new_string = malloc(strlen(myfifo) + strlen(passwd) + 1);
+    strcpy(new_string, myfifo);
+    strcat(new_string, passwd);
+    return new_string;
+}
+
+void create_fifo(char* passwd){
+    printf("ffn %s\n", passwd);
+    char* new_string = fifo_name(passwd);
+    printf("%s\n", new_string);
+    int ret = mkfifo(new_string, 0666);
     if (ret == 0){
     } else if (ret == -1) {
         switch (errno)
@@ -31,6 +50,8 @@ void create_fifo(char* path){
         case EEXIST:
             break;
         default:
+        
+        printf("%d\n", errno);
             err_and_leave("Failed to create pipe", 4);
             break;
         }
@@ -41,9 +62,9 @@ void create_fifo(char* path){
 
 int pipe_sender(setting_t settings){
     int fd_in, fd_fifo;
-    char* myfifo = "/tmp/myfifo";
-    create_fifo(myfifo);
-    fd_fifo = open_file(myfifo, O_WRONLY, 0);
+    create_fifo(settings.password);
+    char* fifon = fifo_name(settings.password);
+    fd_fifo = open_file(fifon, O_WRONLY, 0);
     //printf("Opened\n");
     fd_in = open_file(settings.filename, O_RDONLY, 0);
 
@@ -76,9 +97,9 @@ int pipe_sender(setting_t settings){
 
 int pipe_receiver(setting_t settings){
     int fd_out, fd_fifo;
-    char* myfifo = "/tmp/myfifo";
-    create_fifo(myfifo);
-    fd_fifo = open_file(myfifo, O_RDONLY, 0);
+    create_fifo(settings.password);
+    char* fifon = fifo_name(settings.password);
+    fd_fifo = open_file(fifon, O_RDONLY, 0);
     //printf("Opened\n");
     fd_out = open_file(settings.filename, O_WRONLY | O_APPEND | O_CREAT, S_IWRITE | S_IREAD);
     char buffer[BUFFSZ];
@@ -100,6 +121,7 @@ int pipe_receiver(setting_t settings){
     }
     fclose(stream);
     close(fd_out);
+    unlink(fifon);
     return 0;
 }
 /*
