@@ -128,10 +128,8 @@ int main(int argc, char **argv)
     break;
   }
 
-  if (!flag_file || !flag_method || !flag_pass || !flag_role || ((settings.method == SHARED) && !flag_max_pages)){
+  if (!flag_file || !flag_method || !flag_pass || !flag_role ){
     err_and_leave("Some options not set", 3);
-  } else if (settings.method == SHARED) {
-    printf("Role: %s\nMethod: %s\nPassword: %s\nFile: %s\nMax number of pages: %d\n", role_str, method_str, settings.password, settings.filename, settings.max_pages);
   } else {
     printf("Role: %s\nMethod: %s\nPassword: %s\nFile: %s\n", role_str, method_str, settings.password, settings.filename);
   }
@@ -141,7 +139,9 @@ int main(int argc, char **argv)
   case PIPE:
     return use_pipe(settings);
     break;
-  
+  case SHARED:
+    err_and_leave("Shared memory not yet implemented", 0);
+    break;
   default:
     break;
   }
