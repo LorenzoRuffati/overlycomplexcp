@@ -1,2 +1,6 @@
-project('overlycomplex_cp', 'c')
-executable('ocp', 'src/main.c')
+project('overlycomplex_cp', 'c',
+    version: '0.1',
+    license: 'MIT')
+
+subdir('src')
+executable('ocp', sources: sources)
