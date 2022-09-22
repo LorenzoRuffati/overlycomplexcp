@@ -12,29 +12,21 @@
 #define DEFAULT_WIDTH (2048)
 
 typedef struct {
-    pthread_mutex_t lock; // Only held during initialization to prevent
-    
-    // These two locks ensure only one sender/receiver
-    pthread_mutex_t sender_lock;
-    pthread_mutex_t receiver_lock;
+    pthread_mutex_t lock; // Only held during initialization to prevent multiple access
+    volatile int abort; // A flag to be set to 1 whenever any error is detected
 
-    cond_package reader_arrived;
+    cond_package reader_ready; // Once the reader joined it'll signal this value
     cond_package writer_ready;
 
     size_t mmap_size;
-    sha_hexdigest hash; // Used both for integrity check and for coordination
 } coord_struct;
 
 typedef struct {
-    cond_package signal_rdr;
-    // If started then this will be held by the writer
-    cond_package reader_cnt;
-    pthread_mutex_t started_lock;
-    int started_flag;
-    pthread_mutex_t joining_lock;
+    // Used either to signal that the reader arrived or that it finished reading
+    cond_package signal_wrtr;
 
-    pthread_rwlock_t active[2];
-    pthread_rwlock_t leaving[2];
+    pthread_mutex_t active[2];
+    pthread_mutex_t leaving[2];
     size_t width;
     size_t data_size[2];
     char space[]; //contains two sections of size "width"
@@ -42,9 +34,9 @@ typedef struct {
 } copy_struct;
 
 typedef struct {
-    coord_struct* mem_region;
+    void* mem_region;
     int fd_shared;
-    char* pat;
+    char* path;
 } mmap_creat_ret_t;
 
 
