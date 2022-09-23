@@ -1,0 +1,39 @@
+OCP -- An overlycomplicated copy paste utility
+
+To use this program launch a sender which will copy the
+source file, a receiver which will write the output file and
+wait for both programs to terminate
+
+Options:
+
+--pass <password>, -p <password> 
+    Sender and Receiver need to have the same password to communicate,
+    it must be a valid unix file basename
+
+--role <role>, -r <role>
+    Specify the role, only the first letter of the argument is evaluated,
+    options are:
+    + r, for receiver
+    + s, for sender
+
+--method <method>, -m <method>
+    Specify the IPC method to use, only the first letter of the method
+    is evaluated, options are:
+    + p, for using FIFO queues
+    + s, for shared memory
+    + q, for priority queues (UNIMPLEMENTED)
+
+--file <path to file>, -p <path to file>
+    For the Sender this will be the file whose contents should be sent
+    over the IPC method of choice
+    For the receiver this will be the (non pre-existing) file into which
+    to copy the contents received from the sender
+
+Role, method and filename can also be passed as naked arguments in this
+order
+
+The following two lines are equivalent and start a receiver with password
+"123" waiting for data on a pipe and writing it to the file "output.txt"
+
+ocp -r r -p 123 -m p -f output.txt
+ocp receiver -p 123 pipe -- output.txt

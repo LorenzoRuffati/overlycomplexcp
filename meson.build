@@ -3,4 +3,4 @@ project('overlycomplex_cp', 'c',
     license: 'MIT')
 
 subdir('src')
-executable('ocp', sources: sources)
+executable('ocp', sources: sources + [helpstr_h], link_with: lib_help)
