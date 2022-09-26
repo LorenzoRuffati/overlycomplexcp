@@ -135,7 +135,7 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
         }   
         // The writer will already have noticed that writer is ready
         // No need to signal writer ready
-        pthread_mutex_unlock(&(coord->writer_ready.lock));
+        pthread_mutex_unlock(&(coord->reader_ready.lock));
         // Here I hold copy->active[0], copy->signal_wrtr.lock
     }
     coord->abort = 1; // Anyone else coming needs to know this area of memory ceased being useful
