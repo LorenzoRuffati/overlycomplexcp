@@ -38,7 +38,7 @@ char* fifo_name(char* passwd){
     return new_string;
 }
 
-void create_fifo(char* passwd){
+char* create_fifo(char* passwd){
     printf("ffn %s\n", passwd);
     char* new_string = fifo_name(passwd);
     printf("%s\n", new_string);
@@ -58,12 +58,12 @@ void create_fifo(char* passwd){
     } else {
         err_and_leave("", 4);
     }
+    return new_string;
 }
 
 int pipe_sender(setting_t settings){
     int fd_in, fd_fifo;
-    create_fifo(settings.password);
-    char* fifon = fifo_name(settings.password);
+    char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_WRONLY, 0);
     //printf("Opened\n");
     fd_in = open_file(settings.filename, O_RDONLY, 0);
@@ -97,11 +97,10 @@ int pipe_sender(setting_t settings){
 
 int pipe_receiver(setting_t settings){
     int fd_out, fd_fifo;
-    create_fifo(settings.password);
-    char* fifon = fifo_name(settings.password);
+    char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_RDONLY, 0);
     //printf("Opened\n");
-    fd_out = open_file(settings.filename, O_WRONLY | O_APPEND | O_CREAT, S_IWRITE | S_IREAD);
+    fd_out = open_file(settings.filename, O_WRONLY | O_APPEND | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
     char buffer[BUFFSZ];
     
     FILE* stream = fdopen(fd_fifo, "r");
