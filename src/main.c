@@ -26,6 +26,7 @@ int main(int argc, char **argv)
     {"role", required_argument, NULL, 'r'},
     {"method", required_argument, NULL, 'm'},
     {"max_pages", required_argument, NULL, 'l'},
+    {"help", no_argument, NULL, 'h'},
     {0, 0, NULL, 0}
   };
 
@@ -33,9 +34,13 @@ int main(int argc, char **argv)
   int opt_index = 0;
   setting_t settings;
 
-  while ((opt_found = getopt_long(argc, argv, "p:f:r:m:l:", long_options, &opt_index)) != -1){
+  while ((opt_found = getopt_long(argc, argv, "hp:f:r:m:l:", long_options, &opt_index)) != -1){
     switch (opt_found)
     {
+    case 'h':
+      print_help();
+      return 0;
+      break;
     case 'p': // either -p<pass> or --pass <pass>
       if (flag_pass){
         err_and_leave("Too many definitions of password", 1);
