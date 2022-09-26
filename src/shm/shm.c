@@ -148,24 +148,24 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     }
     // I keep the lock on signal_wrtr, reader arrived and I can start writing
     
-    int active_segment = 0;
+    int idx = 0;
     FILE* fstr = fopen(settings.filename, "rb");
     do
-    { // I have lock on active[active_segment] (and signal_wrtr.lock)
-        size_t n_r = fread(&(copy->space[copy->width * active_segment]),
+    { // I have lock on active[idx] (and signal_wrtr.lock)
+        size_t n_r = fread(&(copy->space[copy->width * idx]),
                             1, copy->width, fstr);
-        copy->data_size[active_segment] = n_r;
+        copy->data_size[idx] = n_r;
 
-        pthread_mutex_lock(&(copy->leaving[active_segment]));
-        pthread_mutex_unlock(&(copy->active[active_segment]));
+        pthread_mutex_lock(&(copy->leaving[idx]));
+        pthread_mutex_unlock(&(copy->active[idx]));
 
-        active_segment = !active_segment; // Invert
+        idx = !idx; // Invert
 
-        pthread_mutex_lock(&(copy->active[active_segment]));
-        pthread_mutex_unlock(&(copy->leaving[!active_segment]));
-    } while (copy->data_size[!active_segment] != 0);
-    // I have lock on active[active_segment] (and signal_wrtr.lock)
-    pthread_mutex_unlock(&(copy->active[active_segment]));
+        pthread_mutex_lock(&(copy->active[idx]));
+        pthread_mutex_unlock(&(copy->leaving[!idx]));
+    } while (copy->data_size[!idx] != 0);
+    // I have lock on active[idx] (and signal_wrtr.lock)
+    pthread_mutex_unlock(&(copy->active[idx]));
     fclose(fstr);
 
     copy->signal_wrtr.v = 0;
