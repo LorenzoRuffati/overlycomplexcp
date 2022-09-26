@@ -17,4 +17,6 @@ typedef struct {
 } setting_t;
 
 void err_and_leave(char* messg, int code);
+role_t parse_role(char* inp);
+ipc_t parse_ipc(char* inp);
 #endif

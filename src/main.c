@@ -9,7 +9,11 @@
 #include "shared/file_util.h"
 #include "pipe/pipe.h"
 #include "shm/shm.h"
+#include "helpstr.h"
 
+void print_help(){
+  printf("%.*s\n", ___src_help_str_txt_len, ___src_help_str_txt);
+}
 
 int main(int argc, char **argv)
 {
@@ -25,6 +29,7 @@ int main(int argc, char **argv)
     {"role", required_argument, NULL, 'r'},
     {"method", required_argument, NULL, 'm'},
     {"max_pages", required_argument, NULL, 'l'},
+    {"help", no_argument, NULL, 'h'},
     {0, 0, NULL, 0}
   };
 
@@ -32,14 +37,22 @@ int main(int argc, char **argv)
   int opt_index = 0;
   setting_t settings;
 
-  while ((opt_found = getopt_long(argc, argv, "p:f:r:m:l:", long_options, &opt_index)) != -1){
+  while ((opt_found = getopt_long(argc, argv, "hp:f:r:m:l:", long_options, &opt_index)) != -1){
     switch (opt_found)
     {
+    case 'h':
+      print_help();
+      return 0;
+      break;
     case 'p': // either -p<pass> or --pass <pass>
       if (flag_pass){
         err_and_leave("Too many definitions of password", 1);
       } else {
         flag_pass = 1;
+      }
+
+      if (strchr(optarg, '/') != NULL){
+        err_and_leave("Can't have '/' in password", 1);
       }
       settings.password = optarg;
       break;
@@ -58,18 +71,7 @@ int main(int argc, char **argv)
       } else {
         flag_role = 1;
       }
-
-      switch (*optarg){
-        case 's':
-          settings.role = SENDER;
-          break;
-        case 'r':
-          settings.role = RECEIVER;
-          break;
-        default:
-          err_and_leave("Role needs to either be r for receiver or s for sender", 2);
-          break;
-      }
+      settings.role = parse_role(optarg);
       break;
     case 'm':
       if (flag_method){
@@ -77,18 +79,7 @@ int main(int argc, char **argv)
       } else {
         flag_method = 1;
       }
-      
-      switch (*optarg){
-        case 'p':
-          settings.method = PIPE;
-          break;
-        case 's':
-          settings.method = SHARED;
-          break;
-        default:
-          err_and_leave("Method needs to either be p for pipe or s for shared", 2);
-          break;
-      }
+      settings.method = parse_ipc(optarg);
       break;
     case 'l':
     if (flag_max_pages){
@@ -98,6 +89,22 @@ int main(int argc, char **argv)
         }
         settings.max_pages = atoi(optarg);
         break;
+    }
+  }
+
+
+  for (int idx=optind; idx<argc; idx++){
+    if (!flag_role){
+      settings.role = parse_role(argv[idx]);
+      flag_role = 1;
+    } else if (!flag_method){
+      settings.method = parse_ipc(argv[idx]);
+      flag_method = 1;
+    } else if (!flag_file){
+      settings.filename = argv[idx];
+      flag_file = 1;
+    } else {
+      err_and_leave("Too many arguments", 1);
     }
   }
 
@@ -130,10 +137,12 @@ int main(int argc, char **argv)
   }
 
   if (!flag_file || !flag_method || !flag_pass || !flag_role ){
-    err_and_leave("Some options not set", 3);
+    print_help();
+    return 3;
   } else {
     printf("Role: %s\nMethod: %s\nPassword: %s\nFile: %s\n", role_str, method_str, settings.password, settings.filename);
   }
+  printf("\n");
 
   switch (settings.method)
   {

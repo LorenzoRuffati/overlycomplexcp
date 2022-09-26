@@ -4,4 +4,4 @@ project('overlycomplex_cp', 'c',
 
 openssl = dependency('openssl', static: true)
 subdir('src')
-executable('ocp', sources: sources, dependencies: openssl, install: true, link_args: '-lrt')
+executable('ocp', sources: sources + [helpstr_h], link_with: lib_help, dependencies: openssl, install: true, link_args: '-lrt')
