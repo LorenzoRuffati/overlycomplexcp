@@ -133,8 +133,27 @@ int main(int argc, char **argv)
     break;
   }
 
-  if (!flag_file || !flag_method || !flag_pass || !flag_role ){
-    print_help();
+  int all_flags = 1;
+
+  if (!flag_file){
+    printf("Specify the file to work on through '--file' or '-f'\n");
+    all_flags &= 0;
+  }
+  if (!flag_method){
+    printf("Specify the IPC method through '--method' or '-m'\n");
+    all_flags &= 0;
+  }
+  if (!flag_pass){
+    printf("Specify the password through '--pass' or '-p'\n");
+    all_flags &= 0;
+  }
+  if (!flag_role){
+    printf("Specify program role through '--role' or '-r'\n");
+    all_flags &= 0;
+  }
+
+  if (!all_flags){
+    printf("Use --help to get more informations on how to use the program\n");
     return 3;
   } else {
     printf("Role: %s\nMethod: %s\nPassword: %s\nFile: %s\n", role_str, method_str, settings.password, settings.filename);
