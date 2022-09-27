@@ -10,6 +10,7 @@
 #include "pipe/pipe.h"
 #include "shm/shm.h"
 #include "helpstr.h"
+#include "src/pipe/pipe.h"
 
 void print_help(){
   printf("%.*s\n", ___src_help_str_txt_len, ___src_help_str_txt);
@@ -92,7 +93,6 @@ int main(int argc, char **argv)
     }
   }
 
-
   for (int idx=optind; idx<argc; idx++){
     if (!flag_role){
       settings.role = parse_role(argv[idx]);
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
   switch (settings.method)
   {
   case PIPE:
-    err_and_leave("Pipe not yet implemented", 0);
+    return use_pipe(settings);
     break;
   case SHARED:
     return use_shared(settings);
