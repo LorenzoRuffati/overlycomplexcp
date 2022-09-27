@@ -71,6 +71,9 @@ int pipe_sender(setting_t settings){
     char buffer[BUFFSZ]; // 
     size_t read_position = 0;
     FILE* fifo_stream = fdopen(fd_fifo, "w");
+    if (fifo_stream == NULL){
+       err_and_leave("Couldn't open file stream", 4);
+    }
 
     struct stat sb;
     if (stat(settings.filename, &sb) == -1) {
