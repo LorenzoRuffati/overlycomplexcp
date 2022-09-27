@@ -1,4 +1,7 @@
 sources = files('main.c')
+subdir('shared')
+subdir('pipe')
+subdir('shm')
 
 xxd = find_program('xxd')
 
@@ -10,7 +13,3 @@ helpstr_h = custom_target(
 )
 
 lib_help = static_library('helpstr', [helpstr_h])
-
-
-
-subdir('shared')
