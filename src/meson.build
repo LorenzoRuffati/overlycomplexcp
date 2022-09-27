@@ -13,4 +13,3 @@ helpstr_h = custom_target(
 )
 
 lib_help = static_library('helpstr', [helpstr_h])
-
