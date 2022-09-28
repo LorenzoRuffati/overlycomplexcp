@@ -20,20 +20,20 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
             fdm = shm_open(path, O_RDWR, 0);
             coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
             printf("mmp sync %p %d\n", str, errno);
-            return (mmap_creat_ret_t){str, fdm, path};
+            return (mmap_creat_ret_t){.mem_region=str, .fd_shared=fdm, .path=path};
         } else {
             err_and_leave("Error when accessing shared memory", 5);
         }
     }
     ftruncate(fdm, sizeof(coord_struct));
-    coord_struct* str = /*malloc(sizeof(coord_struct));/*/ (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
+    coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     init_mutex(&(str->lock));
     init_cond_pack(&(str->reader_ready));
     init_cond_pack(&(str->writer_ready));
     str->abort = 0;
 
-    return (mmap_creat_ret_t){str, fdm, path};
+    return (mmap_creat_ret_t){.mem_region=str, .fd_shared=fdm, .path=path};
 }
 
 char* path_copy(char* passwd){
@@ -69,7 +69,7 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
     init_mutex(&(copy_mem->leaving[1]));
     copy_mem->width = width;
 
-    return (mmap_creat_ret_t){copy_mem, fdm, path};
+    return (mmap_creat_ret_t){.mem_region=copy_mem, .fd_shared=fdm, .path=path};
 }
 
 
