@@ -8,8 +8,9 @@
 #include "../shared/hash.h"
 #include "sync_util.h"
 #define NUM_READERS (2)
-#define BASEPATHSHM "/tmp/shm_ocp/"
 #define DEFAULT_WIDTH (2048)
+#define BASEPATHSHM "/tmp/shm_ocp/"
+#define SHMEMBASE "/ocp_sync"
 
 typedef struct {
     pthread_mutex_t lock; // Only held during initialization to prevent multiple access

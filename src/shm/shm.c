@@ -9,10 +9,11 @@
 // Tries to access the coordination shared memory area or creates it if
 // it doesn't yet exist
 mmap_creat_ret_t access_or_create_coord(char* passwd){
-    char* path = malloc(strlen("/ocp_sync")+strlen(passwd)+1);
-    strcpy(path, "/ocp_sync");
+    char* path = malloc(strlen(SHMEMBASE)+strlen(passwd)+1);
+    strcpy(path, SHMEMBASE);
     strcat(path, passwd);
-    int fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR | O_TRUNC, 0660);
+
+    int fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
     printf("opn_sync %d %d\n", fdm, errno);
     if (fdm == -1){
         if (errno == EEXIST){
@@ -26,7 +27,7 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
     }
     ftruncate(fdm, sizeof(coord_struct));
     coord_struct* str = /*malloc(sizeof(coord_struct));/*/ (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
-    // TODO: init all locks and the like here, returning will relinquish the lock and others might access
+    
     init_mutex(&(str->lock));
     init_cond_pack(&(str->reader_ready));
     init_cond_pack(&(str->writer_ready));
@@ -47,7 +48,7 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
     int fdm;
     char *path = path_copy(passwd);
     { // Create file for shared_memory
-        fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR | O_TRUNC, 0660);
+        fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
         printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
             err_and_leave("Error when creating file-specific sharedmemory", 5);
