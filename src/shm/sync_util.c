@@ -11,7 +11,7 @@
 #include "../shared/file_util.h"
 
 char * lockpath_from_pass(char* passw, char* base){
-    char* path = malloc(strlen(passw) + strlen(base)+ strlen(".lock"));
+    char* path = malloc(strlen(passw) + strlen(base)+ strlen(".lock")+1);
     strcpy(path, base);
     strcat(path, passw);
     strcat(path, ".lock");

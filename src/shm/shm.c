@@ -176,7 +176,12 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     // Now I'm alone, I can unlink the files and leave
     unlink_lock(settings.password, BASEPATHSHM);
     shm_unlink(mmap_info.path);
+    free(mmap_info.path);
     shm_unlink(ret_copy_init.path);
+    free(ret_copy_init.path);
+    close(mmap_info.fd_shared);
+    close(ret_copy_init.fd_shared);
+    close(lockfd);
     return 0;
 }
 
@@ -184,8 +189,12 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     coord_struct* coord = (coord_struct*) mmap_info.mem_region;
     if (coord->abort != 0){
         shm_unlink(mmap_info.path);
+        free(mmap_info.path);
         return 1;
     }
+    free(mmap_info.path);
+    close(lockfd);
+    
     pthread_mutex_lock(&(coord->lock)); // Prevent any other thread from joining
     pthread_mutex_lock(&(coord->reader_ready.lock));
     if (coord->reader_ready.v != 0){
@@ -212,6 +221,7 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
         if (fdm == -1){
             err_and_leave("Error when creating file-specific sharedmemory", 5);
         }
+        free(path);
     }
     copy_struct* copy = (copy_struct*) mmap(NULL, coord->mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
@@ -221,6 +231,8 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
         copy->signal_wrtr.v = 1;
         pthread_cond_signal(&(copy->signal_wrtr.cond));
     pthread_mutex_unlock(&(copy->signal_wrtr.lock));
+
+    close(mmap_info.fd_shared);
 
     // Here I'm only holding copy->leaving[1]
     FILE* fstr = fopen(settings.filename, "w");
@@ -247,11 +259,14 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
         fflush(fstr);
         // Here I have the lock on leaving[!idx]
     }
+    fclose(fstr);
 
     pthread_mutex_unlock(&(copy->leaving[!idx]));
     pthread_mutex_lock(&(copy->signal_wrtr.lock));
     copy->signal_wrtr.v = 1;
     pthread_cond_signal(&(copy->signal_wrtr.cond));
     pthread_mutex_unlock(&(copy->signal_wrtr.lock));
+
+    close(fdm);
     return 0;
 }
