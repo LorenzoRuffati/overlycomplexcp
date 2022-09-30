@@ -10,7 +10,7 @@
 #define BUFFSZ 256
 
 int use_pipe(setting_t settings){
-    printf("usp %s\n", settings.password);
+    //printf("usp %s\n", settings.password);
     switch (settings.role) {
         case SENDER:
             return pipe_sender(settings);
@@ -25,7 +25,7 @@ int use_pipe(setting_t settings){
 }
 
 char* fifo_name(char* passwd){
-    printf("ffn %s\n", passwd);
+    //printf("ffn %s\n", passwd);
     char* myfifo = "/tmp/myfifo_";
     // We have passwd
     // We have myfifo
@@ -39,9 +39,9 @@ char* fifo_name(char* passwd){
 }
 
 char* create_fifo(char* passwd){
-    printf("ffn %s\n", passwd);
+    //printf("ffn %s\n", passwd);
     char* new_string = fifo_name(passwd);
-    printf("%s\n", new_string);
+    //printf("%s\n", new_string);
     int ret = mkfifo(new_string, 0666);
     if (ret == 0){
     } else if (ret == -1) {
@@ -50,8 +50,7 @@ char* create_fifo(char* passwd){
         case EEXIST:
             break;
         default:
-        
-        printf("%d\n", errno);
+            printf("%d\n", errno);
             err_and_leave("Failed to create pipe", 4);
             break;
         }

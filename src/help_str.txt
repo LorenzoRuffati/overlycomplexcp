@@ -29,6 +29,11 @@ Options:
     For the receiver this will be the (non pre-existing) file into which
     to copy the contents received from the sender
 
+--length-buff <size in kb>, -l <size in kb>
+    Use this option with a shared memory sender to specify the size (in kB)
+    of each chunk that will be copied. The total shared memory usage will be
+    slightly more than twice the size of the chunk
+
 Role, method and filename can also be passed as naked arguments in this
 order
 

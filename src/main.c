@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     {"file", required_argument, NULL, 'f'},
     {"role", required_argument, NULL, 'r'},
     {"method", required_argument, NULL, 'm'},
-    {"max_pages", required_argument, NULL, 'l'},
+    {"length-buff", required_argument, NULL, 'l'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, NULL, 0}
   };
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
       break;
     case 'l':
     if (flag_max_pages){
-      err_and_leave("Too many definitions of max_pages", 1);
+      err_and_leave("Too many definitions of buffer length", 1);
       } else {
         flag_max_pages = 1;
         }
@@ -153,6 +153,11 @@ int main(int argc, char **argv)
   if (!flag_role){
     printf("Specify program role through '--role' or '-r'\n");
     all_flags &= 0;
+  }
+
+  if ((settings.method==SHARED) && (settings.role == SENDER) && !flag_max_pages){
+    printf("Setting default buffer size to 2 kb, use the -l flag to set manually\n");
+    settings.max_pages = 2;
   }
 
   if (!all_flags){
