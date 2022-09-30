@@ -74,16 +74,15 @@ int main(int argc, char **argv)
     printf("\n");
   }
 
-  switch (settings.method)
-  {
-  case PIPE:
-    return use_pipe(settings);
-    break;
-  case SHARED:
-    return use_shared(settings);
-    break;
-  default:
-    break;
+  switch (settings.method){
+    case PIPE:
+      return use_pipe(settings);
+      break;
+    case SHARED:
+      return use_shared(settings);
+      break;
+    default:
+      break;
   }
   return 0;
 }
