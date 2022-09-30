@@ -37,6 +37,7 @@ int main(int argc, char **argv)
   int opt_found;
   int opt_index = 0;
   setting_t settings;
+  settings.filename = NULL;
 
   while ((opt_found = getopt_long(argc, argv, "hp:f:r:m:l:", long_options, &opt_index)) != -1){
     switch (opt_found)
@@ -131,6 +132,9 @@ int main(int argc, char **argv)
   case RECEIVER:
     role_str = "Receiver";
     break;
+  case CLEANER:
+    role_str = "Cleaner";
+    break;
   default:
     role_str = "Error";
     break;
@@ -138,10 +142,6 @@ int main(int argc, char **argv)
 
   int all_flags = 1;
 
-  if (!flag_file){
-    printf("Specify the file to work on through '--file' or '-f'\n");
-    all_flags &= 0;
-  }
   if (!flag_method){
     printf("Specify the IPC method through '--method' or '-m'\n");
     all_flags &= 0;
@@ -152,6 +152,10 @@ int main(int argc, char **argv)
   }
   if (!flag_role){
     printf("Specify program role through '--role' or '-r'\n");
+    all_flags &= 0;
+  }
+  if (!flag_file && (settings.role != CLEANER)){
+    printf("Specify the file to work on through '--file' or '-f'\n");
     all_flags &= 0;
   }
 

@@ -9,21 +9,6 @@
 
 #define BUFFSZ 256
 
-int use_pipe(setting_t settings){
-    //printf("usp %s\n", settings.password);
-    switch (settings.role) {
-        case SENDER:
-            return pipe_sender(settings);
-            break;
-        case RECEIVER:
-            return pipe_receiver(settings);
-            break;
-        default:
-            err_and_leave("Impossible role", 4);
-    }
-    return 0;
-}
-
 char* fifo_name(char* passwd){
     //printf("ffn %s\n", passwd);
     char* myfifo = "/tmp/myfifo_";
@@ -36,6 +21,26 @@ char* fifo_name(char* passwd){
     strcpy(new_string, myfifo);
     strcat(new_string, passwd);
     return new_string;
+}
+
+int use_pipe(setting_t settings){
+    //printf("usp %s\n", settings.password);
+    switch (settings.role) {
+        case SENDER:
+            return pipe_sender(settings);
+            break;
+        case RECEIVER:
+            return pipe_receiver(settings);
+            break;
+        case CLEANER:
+            char *fn = fifo_name(settings.password);
+            unlink(fn);
+            free(fn);
+            break;
+        default:
+            err_and_leave("Impossible role", 4);
+    }
+    return 0;
 }
 
 char* create_fifo(char* passwd){

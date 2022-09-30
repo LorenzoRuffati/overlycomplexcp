@@ -6,13 +6,17 @@
 #include <unistd.h>
 
 
-// Tries to access the coordination shared memory area or creates it if
-// it doesn't yet exist
-mmap_creat_ret_t access_or_create_coord(char* passwd){
+char* coord_path(char* passwd){
     char* path = malloc(strlen(SHMEMBASE)+strlen(passwd)+1);
     strcpy(path, SHMEMBASE);
     strcat(path, passwd);
+    return path;
+}
 
+// Tries to access the coordination shared memory area or creates it if
+// it doesn't yet exist
+mmap_creat_ret_t access_or_create_coord(char* passwd){
+    char* path = coord_path(passwd);
     int fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
     //printf("opn_sync %d %d\n", fdm, errno);
     if (fdm == -1){
@@ -75,6 +79,17 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
 
 
 int use_shared(setting_t settings){
+    if (settings.role == CLEANER){
+        unlink_lock(settings.password, BASEPATHSHM);
+        char *path_coord = coord_path(settings.password);
+        shm_unlink(path_coord);
+        char *path_cp = path_copy(settings.password);
+        shm_unlink(path_cp);
+        free(path_coord);
+        free(path_cp);
+        return 0;
+    }
+
     int fd = lock_sync_file(settings.password, BASEPATHSHM);
     mmap_creat_ret_t shm_info = access_or_create_coord(settings.password);
 
