@@ -159,7 +159,8 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     // I keep the lock on signal_wrtr, reader arrived and I can start writing
     
     int idx = 0;
-    FILE* fstr = fopen(settings.filename, "rb");
+    int fdin = open_file(settings.filename, O_RDONLY, 0);
+    FILE* fstr = fdopen(fdin, "rb");
     do
     { // I have lock on active[idx] (and signal_wrtr.lock)
         size_t n_r = fread(&(copy->space[copy->width * idx]),
