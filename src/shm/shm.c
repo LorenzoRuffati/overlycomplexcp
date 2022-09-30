@@ -14,12 +14,12 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
     strcat(path, passwd);
 
     int fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
-    printf("opn_sync %d %d\n", fdm, errno);
+    //printf("opn_sync %d %d\n", fdm, errno);
     if (fdm == -1){
         if (errno == EEXIST){
             fdm = shm_open(path, O_RDWR, 0);
             coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
-            printf("mmp sync %p %d\n", str, errno);
+            //printf("mmp sync %p %d\n", str, errno);
             return (mmap_creat_ret_t){.mem_region=str, .fd_shared=fdm, .path=path};
         } else {
             err_and_leave("Error when accessing shared memory", 5);
@@ -49,18 +49,18 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
     char *path = path_copy(passwd);
     { // Create file for shared_memory
         fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
-        printf("opn_cp_shm %d %d\n", fdm, errno);
+        //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
             err_and_leave("Error when creating file-specific sharedmemory", 5);
         }
     }
     size_t m_sz = sizeof(copy_struct) + (2*width);
-    printf("Size of copy area: %ld + 2*%ld = %ld\n", sizeof(copy_struct), width, m_sz);
+    //printf("Size of copy area: %ld + 2*%ld = %ld\n", sizeof(copy_struct), width, m_sz);
     *mmap_size = m_sz;
     ftruncate(fdm, m_sz);
     copy_struct* copy_mem = (copy_struct*) mmap(NULL, m_sz, PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
-    printf("cmm %p %d\n", copy_mem, errno);
+    //printf("cmm %p %d\n", copy_mem, errno);
     init_cond_pack(&(copy_mem->signal_wrtr));
 
 
@@ -226,7 +226,7 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     int fdm;
     { // Create file for shared_memory
         fdm = shm_open(path, O_RDWR , 0660);
-        printf("opn_cp_shm %d %d\n", fdm, errno);
+        //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
             err_and_leave("Error when creating file-specific sharedmemory", 5);
         }
@@ -246,7 +246,7 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     // Here I'm only holding copy->leaving[1]
     FILE* fstr = fopen(settings.filename, "w");
     ftruncate(fileno(fstr), 0);
-    printf("Opened file\n");
+    //printf("Opened file\n");
 
     int to_read = 1;
     int idx = 0;
@@ -261,7 +261,7 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
         }
         to_read = (n_wr > 0);
 
-        printf("Read %ld bytes\n", n_wr);
+        //printf("Read %ld bytes\n", n_wr);
 
         // Lock the leaving lock
         pthread_mutex_lock(&(copy->leaving[idx]));
