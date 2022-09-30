@@ -6,6 +6,9 @@
 #include <getopt.h>
 
 #include "shared/types.h"
+#include "shared/file_util.h"
+#include "pipe/pipe.h"
+#include "shm/shm.h"
 #include "helpstr.h"
 #include "src/pipe/pipe.h"
 
@@ -166,7 +169,7 @@ int main(int argc, char **argv)
     return use_pipe(settings);
     break;
   case SHARED:
-    err_and_leave("Shared memory not yet implemented", 0);
+    return use_shared(settings);
     break;
   default:
     break;

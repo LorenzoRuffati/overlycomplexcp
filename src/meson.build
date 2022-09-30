@@ -2,7 +2,6 @@ sources = files('main.c')
 subdir('shared')
 subdir('pipe')
 subdir('shm')
-
 xxd = find_program('xxd')
 
 helpstr_h = custom_target(
