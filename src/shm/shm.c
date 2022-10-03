@@ -111,9 +111,13 @@ int use_shared(setting_t settings){
 }
 
 int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
+    int fdin = open_file(settings.filename, O_RDONLY, 0);
+    FILE* fstr = fdopen(fdin, "rb");
+
     coord_struct* coord = (coord_struct*) mmap_info.mem_region;
     if (coord->abort != 0){
         shm_unlink(mmap_info.path);
+        free(mmap_info.path);
         return 1;
     }
     pthread_mutex_lock(&(coord->lock)); // Prevent any other thread from joining
@@ -174,8 +178,6 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     // I keep the lock on signal_wrtr, reader arrived and I can start writing
     
     int idx = 0;
-    int fdin = open_file(settings.filename, O_RDONLY, 0);
-    FILE* fstr = fdopen(fdin, "rb");
     do
     { // I have lock on active[idx] (and signal_wrtr.lock)
         size_t n_r = fread(&(copy->space[copy->width * idx]),
