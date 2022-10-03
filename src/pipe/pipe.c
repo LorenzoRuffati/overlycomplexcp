@@ -25,6 +25,7 @@ char* fifo_name(char* passwd){
 
 int use_pipe(setting_t settings){
     //printf("usp %s\n", settings.password);
+    char *fn;
     switch (settings.role) {
         case SENDER:
             return pipe_sender(settings);
@@ -33,7 +34,7 @@ int use_pipe(setting_t settings){
             return pipe_receiver(settings);
             break;
         case CLEANER:
-            char *fn = fifo_name(settings.password);
+            fn = fifo_name(settings.password);
             unlink(fn);
             free(fn);
             break;
@@ -69,6 +70,7 @@ int pipe_sender(setting_t settings){
     int fd_in, fd_fifo;
     char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_WRONLY, 0);
+    free(fifon);
     //printf("Opened\n");
     fd_in = open_file(settings.filename, O_RDONLY, 0);
 
@@ -128,6 +130,7 @@ int pipe_receiver(setting_t settings){
     fclose(stream);
     close(fd_out);
     unlink(fifon);
+    free(fifon);
     return 0;
 }
 /*
