@@ -122,7 +122,8 @@ int pipe_receiver(setting_t settings){
         //printf("Read %d bytes\n", n_read);
         int n_write = write_chunk(fd_out, n_read, buffer);
         if (n_write != n_read){
-            err_and_leave("Incompatible read and write", 4);
+            free(fifon);
+            err_and_leave("Incompatible read and write", 4);           
         }
         //printf("Wrote: %.*s\n", n_read, buffer);
         //sleep(3);
@@ -138,4 +139,5 @@ echo "hi pipes" > test_in.txt
 builddir/ocp -f test_in.txt --pass 123 --method p -r s
 builddir/ocp -f test_out.txt --pass 123 --method p -r r
 cat test_out.txt
-*/
+valgrind --leak-check=full --show-leak-kinds=all builddir/ocp -f test_in.txt --pass 123 --method p -r s
+valgrind --leak-check=full --show-leak-kinds=all builddir/ocp -f test_out.txt --pass 123 --method p -r r
