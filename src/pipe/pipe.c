@@ -134,10 +134,3 @@ int pipe_receiver(setting_t settings){
     free(fifon);
     return 0;
 }
-/*
-echo "hi pipes" > test_in.txt
-builddir/ocp -f test_in.txt --pass 123 --method p -r s
-builddir/ocp -f test_out.txt --pass 123 --method p -r r
-cat test_out.txt
-valgrind --leak-check=full --show-leak-kinds=all builddir/ocp -f test_in.txt --pass 123 --method p -r s
-valgrind --leak-check=full --show-leak-kinds=all builddir/ocp -f test_out.txt --pass 123 --method p -r r
