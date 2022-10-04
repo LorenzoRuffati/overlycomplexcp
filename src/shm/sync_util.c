@@ -25,14 +25,14 @@ int lock_sync_file(char *passw, char* base){
     }
 
     char* path = lockpath_from_pass(passw, base);
-
     int fd = open(path, O_CREAT, 0660);
     int res = flock(fd, LOCK_EX);
+    free(path);
+
     if (res){
         printf("%d %d\n", res, errno);
         err_and_leave("Error when locking file", 5);
     }
-    free(path);
     return fd;
 }
 

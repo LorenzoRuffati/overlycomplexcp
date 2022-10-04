@@ -9,13 +9,12 @@ int open_file(char* rel_path, int flags, mode_t mode){
    Open the given (existing) file and return the file descriptor to be used
    in future function calls
    */
-  int fd = open(rel_path, flags, mode);
-  if (fd == -1){
-   printf("File: < %s > can't be opened\n", rel_path);
-   err_and_leave("", 3);
-  }
-  //printf("%d\n", fd);
-  return fd;
+   int fd = open(rel_path, flags, mode);
+   if (fd == -1){
+      printf("File: < %s > can't be opened\n", rel_path);
+   }
+   //printf("%d\n", fd);
+   return fd;
 }
 
 size_t read_chunk(int fd_o, size_t beginning, size_t chunk_size, char* buffer, int seek){

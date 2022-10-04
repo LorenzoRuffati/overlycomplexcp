@@ -26,6 +26,7 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
             //printf("mmp sync %p %d\n", str, errno);
             return (mmap_creat_ret_t){.mem_region=str, .fd_shared=fdm, .path=path};
         } else {
+            free(path);
             err_and_leave("Error when accessing shared memory", 5);
         }
     }
@@ -55,6 +56,7 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
         fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
         //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
+            free(path);
             err_and_leave("Error when creating file-specific sharedmemory", 5);
         }
     }
@@ -112,6 +114,11 @@ int use_shared(setting_t settings){
 
 int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     int fdin = open_file(settings.filename, O_RDONLY, 0);
+    if (fdin == -1){
+        shm_unlink(mmap_info.path);
+        free(mmap_info.path);
+        err_and_leave("Can't open input file", 5);
+    }
     FILE* fstr = fdopen(fdin, "rb");
 
     coord_struct* coord = (coord_struct*) mmap_info.mem_region;
@@ -129,6 +136,8 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
                "delete the files:\n"
                "- /dev/shm%s\n"
                "- /dev/shm%s\n", mmap_info.path, cpath);
+        free(mmap_info.path);
+        free(cpath);
         return 1;
     }
 
@@ -240,16 +249,17 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     }
     pthread_mutex_unlock(&(coord->writer_ready.lock));
 
-    char *path = path_copy(settings.password);
     int fdm;
     { // Create file for shared_memory
+        char *path = path_copy(settings.password);
         fdm = shm_open(path, O_RDWR , 0660);
+        free(path);
         //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
-            err_and_leave("Error when creating file-specific sharedmemory", 5);
+            err_and_leave("Error when accessing file-specific sharedmemory", 5);
         }
-        free(path);
     }
+
     copy_struct* copy = (copy_struct*) mmap(NULL, coord->mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     pthread_mutex_lock(&(copy->leaving[1]));

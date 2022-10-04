@@ -57,6 +57,7 @@ char* create_fifo(char* passwd){
             break;
         default:
             printf("%d\n", errno);
+            free(new_string);
             err_and_leave("Failed to create pipe", 4);
             break;
         }
@@ -71,8 +72,14 @@ int pipe_sender(setting_t settings){
     char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_WRONLY, 0);
     free(fifon);
+    if (fd_fifo == -1){
+        err_and_leave("Can't open FIFO", 4);
+    }
     //printf("Opened\n");
     fd_in = open_file(settings.filename, O_RDONLY, 0);
+    if (fd_in == -1){
+        err_and_leave("Can't open input file", 4);
+    }
 
     char buffer[BUFFSZ]; // 
     size_t read_position = 0;
@@ -108,8 +115,16 @@ int pipe_receiver(setting_t settings){
     int fd_out, fd_fifo;
     char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_RDONLY, 0);
+    if (fd_fifo == -1){
+        free(fifon);
+        err_and_leave("Can't open FIFO", 4);
+    }
     //printf("Opened\n");
     fd_out = open_file(settings.filename, O_WRONLY | O_APPEND | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+    if (fd_out == -1){
+        free(fifon);
+        err_and_leave("Can't open output file", 4);
+    }
     char buffer[BUFFSZ];
     
     FILE* stream = fdopen(fd_fifo, "r");
