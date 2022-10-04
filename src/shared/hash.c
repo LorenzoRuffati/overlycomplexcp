@@ -3,6 +3,9 @@
 void hash_file(char* path, sha_hexdigest* buffer){
     char dig[SHA_DIGEST_LENGTH];
     FILE* fstr= fopen(path, "r");
+    if (fstr == NULL){
+        err_and_leave("Couldn't open file stream", 6);
+    }
     SHA_CTX sha;
     SHA1_Init(&sha);
     char buff[512];

@@ -18,6 +18,10 @@ char* fifo_name(char* passwd){
     // copy myfifo into new_string
     // concatenate passwd to new_string
     char* new_string = malloc(strlen(myfifo) + strlen(passwd) + 1);
+    if (new_string == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 4);
+    }
     strcpy(new_string, myfifo);
     strcat(new_string, passwd);
     return new_string;
@@ -128,6 +132,9 @@ int pipe_receiver(setting_t settings){
     char buffer[BUFFSZ];
     
     FILE* stream = fdopen(fd_fifo, "r");
+    if (stream == NULL){
+       err_and_leave("Couldn't open fifo stream", 4);
+    }
     
     while (1) {
         int n_read = fread(buffer, 1, BUFFSZ, stream);

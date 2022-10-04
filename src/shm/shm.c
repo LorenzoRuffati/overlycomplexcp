@@ -8,6 +8,10 @@
 
 char* coord_path(char* passwd){
     char* path = malloc(strlen(SHMEMBASE)+strlen(passwd)+1);
+    if (path == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 5);
+    }
     strcpy(path, SHMEMBASE);
     strcat(path, passwd);
     return path;
@@ -22,6 +26,11 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
     if (fdm == -1){
         if (errno == EEXIST){
             fdm = shm_open(path, O_RDWR, 0);
+            if (fdm == -1){
+                free(path);
+                perror(NULL);
+                err_and_leave("Error when opening existing shared memory file", 5);
+            }
             coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
             //printf("mmp sync %p %d\n", str, errno);
             return (mmap_creat_ret_t){.mem_region=str, .fd_shared=fdm, .path=path};
@@ -43,6 +52,10 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
 
 char* path_copy(char* passwd){
     char* path = malloc(2+strlen(passwd)+strlen("_copy"));
+    if (path == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 5);
+    }
     strcpy(path, "/");
     strcat(path, passwd);
     strcat(path,"_copy");
@@ -117,9 +130,13 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     if (fdin == -1){
         shm_unlink(mmap_info.path);
         free(mmap_info.path);
+        
         err_and_leave("Can't open input file", 5);
     }
     FILE* fstr = fdopen(fdin, "rb");
+    if (fstr == NULL){
+       err_and_leave("Couldn't open input stream", 5);
+    }
 
     coord_struct* coord = (coord_struct*) mmap_info.mem_region;
     if (coord->abort != 0){
@@ -256,6 +273,7 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
         free(path);
         //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
+            perror(NULL);
             err_and_leave("Error when accessing file-specific sharedmemory", 5);
         }
     }
@@ -273,6 +291,10 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
 
     // Here I'm only holding copy->leaving[1]
     FILE* fstr = fopen(settings.filename, "w");
+    if (fstr == NULL){
+        perror(NULL);
+        err_and_leave("Couldn't open input stream", 5);
+    }
     ftruncate(fileno(fstr), 0);
     //printf("Opened file\n");
 
