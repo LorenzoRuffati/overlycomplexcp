@@ -24,7 +24,7 @@ args_parse parse_args(int argc, char* argv[]){
 
   int opt_found;
   int opt_index = 0;
-  setting_t settings;
+  setting_t settings = {0};
   settings.filename = NULL;
 
   while ((opt_found = getopt_long(argc, argv, "hp:f:r:m:l:", long_options, &opt_index)) != -1){

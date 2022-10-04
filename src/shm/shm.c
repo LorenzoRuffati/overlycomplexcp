@@ -39,7 +39,12 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
             err_and_leave("Error when accessing shared memory", 5);
         }
     }
-    ftruncate(fdm, sizeof(coord_struct));
+    int rt = ftruncate(fdm, sizeof(coord_struct));
+    if (rt != 0){
+        free(path);
+        perror(NULL);
+        err_and_leave("Error in ftruncate", 5);
+    }
     coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     init_mutex(&(str->lock));
@@ -76,7 +81,12 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
     size_t m_sz = sizeof(copy_struct) + (2*width);
     //printf("Size of copy area: %ld + 2*%ld = %ld\n", sizeof(copy_struct), width, m_sz);
     *mmap_size = m_sz;
-    ftruncate(fdm, m_sz);
+    int rt = ftruncate(fdm, m_sz);
+    if (rt != 0){
+        free(path);
+        perror(NULL);
+        err_and_leave("Error in ftruncate", 5);
+    }
     copy_struct* copy_mem = (copy_struct*) mmap(NULL, m_sz, PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     //printf("cmm %p %d\n", copy_mem, errno);
@@ -248,6 +258,18 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     free(mmap_info.path);
     close(lockfd);
     
+    FILE* fstr = fopen(settings.filename, "w");
+    if (fstr == NULL){
+        perror(NULL);
+        err_and_leave("Couldn't open input stream", 5);
+    }
+    int rt = ftruncate(fileno(fstr), 0);
+    if (rt != 0){
+        perror(NULL);
+        err_and_leave("Error in ftruncate", 5);
+    }
+    //printf("Opened file\n");
+    
     pthread_mutex_lock(&(coord->lock)); // Prevent any other thread from joining
     pthread_mutex_lock(&(coord->reader_ready.lock));
     if (coord->reader_ready.v != 0){
@@ -290,13 +312,6 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     close(mmap_info.fd_shared);
 
     // Here I'm only holding copy->leaving[1]
-    FILE* fstr = fopen(settings.filename, "w");
-    if (fstr == NULL){
-        perror(NULL);
-        err_and_leave("Couldn't open input stream", 5);
-    }
-    ftruncate(fileno(fstr), 0);
-    //printf("Opened file\n");
 
     int to_read = 1;
     int idx = 0;
