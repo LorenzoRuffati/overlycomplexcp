@@ -1,5 +1,5 @@
 project('overlycomplex_cp', 'c',
-    version: '0.1',
+    version: '1.1',
     license: 'MIT')
 
 openssl = dependency('openssl', static: true)
