@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef enum {SENDER, RECEIVER} role_t;
+typedef enum {SENDER, RECEIVER, CLEANER} role_t;
 typedef enum {PIPE, QUEUE, SHARED} ipc_t;
 
 

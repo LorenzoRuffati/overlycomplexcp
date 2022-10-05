@@ -12,6 +12,10 @@
 
 char * lockpath_from_pass(char* passw, char* base){
     char* path = malloc(strlen(passw) + strlen(base)+ strlen(".lock")+1);
+    if (path == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 5);
+    }
     strcpy(path, base);
     strcat(path, passw);
     strcat(path, ".lock");
@@ -25,14 +29,19 @@ int lock_sync_file(char *passw, char* base){
     }
 
     char* path = lockpath_from_pass(passw, base);
-
     int fd = open(path, O_CREAT, 0660);
+    free(path);
+    if (fd == -1){
+        perror(NULL);
+        err_and_leave("Couldn't open lock file", 5);
+    }
     int res = flock(fd, LOCK_EX);
+
     if (res){
         printf("%d %d\n", res, errno);
+        perror(NULL);
         err_and_leave("Error when locking file", 5);
     }
-    free(path);
     return fd;
 }
 

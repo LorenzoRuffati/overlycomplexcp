@@ -1,15 +1,18 @@
 #include "types.h"
 void err_and_leave(char* messg, int code){
   fprintf(stderr, "%s\n", messg);
+  perror(NULL);
   exit(code);
 }
 
 role_t parse_role(char* inp){
   switch (*inp){
     case 's':
-    return SENDER;
+      return SENDER;
     case 'r':
       return RECEIVER;
+    case 'c':
+      return CLEANER;
     default:
       err_and_leave("Role needs to either be r for receiver or s for sender", 2);
   }

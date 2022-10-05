@@ -55,6 +55,13 @@ We used the meson build system, installation instructions for which can be found
 Once meson is installed running the `setup.sh` script will create the build directory and executing the `meson compile ocp` in this new directory (`builddir`) will compile and link
 the program creating the `ocp` binary
 
+To build in release mode run the following commands:
+```sh
+./setup.sh
+./config-meson.sh -r
+meson compile -C builddir
+```
+
 ## Dependencies
 On top of meson and gcc the following dependencies are required:
 + xxd

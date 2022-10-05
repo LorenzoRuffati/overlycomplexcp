@@ -9,13 +9,12 @@ int open_file(char* rel_path, int flags, mode_t mode){
    Open the given (existing) file and return the file descriptor to be used
    in future function calls
    */
-  int fd = open(rel_path, flags, mode);
-  if (fd == -1){
-   printf("File: < %s > can't be opened\n", rel_path);
-   err_and_leave("", 3);
-  }
-  //printf("%d\n", fd);
-  return fd;
+   int fd = open(rel_path, flags, mode);
+   if (fd == -1){
+      printf("File: < %s > can't be opened\n", rel_path);
+   }
+   //printf("%d\n", fd);
+   return fd;
 }
 
 size_t read_chunk(int fd_o, size_t beginning, size_t chunk_size, char* buffer, int seek){
@@ -26,6 +25,9 @@ size_t read_chunk(int fd_o, size_t beginning, size_t chunk_size, char* buffer, i
     */
    int fd = dup(fd_o);
    FILE* fstream = fdopen(fd, "r");
+   if (fstream == NULL){
+      err_and_leave("Couldn't open file stream", 3);
+   }
    if (seek) {
       int sk_ret = fseek(fstream, beginning, SEEK_SET);
       if (sk_ret == -1){
@@ -44,6 +46,9 @@ size_t write_chunk(int fd_o, size_t chunk_size, char* buffer){
     */
    int fd = dup(fd_o);
    FILE* fstream = fdopen(fd, "a");
+   if (fstream == NULL){
+      err_and_leave("Couldn't open file stream", 3);
+   }
    //fseek(fstream, 0, SEEK_END);
    size_t bts_written = fwrite(buffer, 1, chunk_size, fstream);
    //printf("%d written\n", bts_written);

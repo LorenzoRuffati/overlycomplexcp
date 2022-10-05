@@ -6,26 +6,45 @@
 #include <unistd.h>
 
 
+char* coord_path(char* passwd){
+    char* path = malloc(strlen(SHMEMBASE)+strlen(passwd)+1);
+    if (path == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 5);
+    }
+    strcpy(path, SHMEMBASE);
+    strcat(path, passwd);
+    return path;
+}
+
 // Tries to access the coordination shared memory area or creates it if
 // it doesn't yet exist
 mmap_creat_ret_t access_or_create_coord(char* passwd){
-    char* path = malloc(strlen(SHMEMBASE)+strlen(passwd)+1);
-    strcpy(path, SHMEMBASE);
-    strcat(path, passwd);
-
+    char* path = coord_path(passwd);
     int fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
     //printf("opn_sync %d %d\n", fdm, errno);
     if (fdm == -1){
         if (errno == EEXIST){
             fdm = shm_open(path, O_RDWR, 0);
+            if (fdm == -1){
+                free(path);
+                perror(NULL);
+                err_and_leave("Error when opening existing shared memory file", 5);
+            }
             coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
             //printf("mmp sync %p %d\n", str, errno);
             return (mmap_creat_ret_t){.mem_region=str, .fd_shared=fdm, .path=path};
         } else {
+            free(path);
             err_and_leave("Error when accessing shared memory", 5);
         }
     }
-    ftruncate(fdm, sizeof(coord_struct));
+    int rt = ftruncate(fdm, sizeof(coord_struct));
+    if (rt != 0){
+        free(path);
+        perror(NULL);
+        err_and_leave("Error in ftruncate", 5);
+    }
     coord_struct* str = (coord_struct*) mmap(NULL, sizeof(coord_struct), PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     init_mutex(&(str->lock));
@@ -38,6 +57,10 @@ mmap_creat_ret_t access_or_create_coord(char* passwd){
 
 char* path_copy(char* passwd){
     char* path = malloc(2+strlen(passwd)+strlen("_copy"));
+    if (path == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 5);
+    }
     strcpy(path, "/");
     strcat(path, passwd);
     strcat(path,"_copy");
@@ -51,13 +74,19 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
         fdm = shm_open(path, O_CREAT | O_EXCL | O_RDWR, 0660);
         //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
+            free(path);
             err_and_leave("Error when creating file-specific sharedmemory", 5);
         }
     }
     size_t m_sz = sizeof(copy_struct) + (2*width);
     //printf("Size of copy area: %ld + 2*%ld = %ld\n", sizeof(copy_struct), width, m_sz);
     *mmap_size = m_sz;
-    ftruncate(fdm, m_sz);
+    int rt = ftruncate(fdm, m_sz);
+    if (rt != 0){
+        free(path);
+        perror(NULL);
+        err_and_leave("Error in ftruncate", 5);
+    }
     copy_struct* copy_mem = (copy_struct*) mmap(NULL, m_sz, PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     //printf("cmm %p %d\n", copy_mem, errno);
@@ -75,6 +104,17 @@ mmap_creat_ret_t init_copy_area(char* passwd, size_t width, size_t* mmap_size){
 
 
 int use_shared(setting_t settings){
+    if (settings.role == CLEANER){
+        unlink_lock(settings.password, BASEPATHSHM);
+        char *path_coord = coord_path(settings.password);
+        shm_unlink(path_coord);
+        char *path_cp = path_copy(settings.password);
+        shm_unlink(path_cp);
+        free(path_coord);
+        free(path_cp);
+        return 0;
+    }
+
     int fd = lock_sync_file(settings.password, BASEPATHSHM);
     mmap_creat_ret_t shm_info = access_or_create_coord(settings.password);
 
@@ -96,9 +136,22 @@ int use_shared(setting_t settings){
 }
 
 int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
+    int fdin = open_file(settings.filename, O_RDONLY, 0);
+    if (fdin == -1){
+        shm_unlink(mmap_info.path);
+        free(mmap_info.path);
+        
+        err_and_leave("Can't open input file", 5);
+    }
+    FILE* fstr = fdopen(fdin, "rb");
+    if (fstr == NULL){
+       err_and_leave("Couldn't open input stream", 5);
+    }
+
     coord_struct* coord = (coord_struct*) mmap_info.mem_region;
     if (coord->abort != 0){
         shm_unlink(mmap_info.path);
+        free(mmap_info.path);
         return 1;
     }
     pthread_mutex_lock(&(coord->lock)); // Prevent any other thread from joining
@@ -110,6 +163,8 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
                "delete the files:\n"
                "- /dev/shm%s\n"
                "- /dev/shm%s\n", mmap_info.path, cpath);
+        free(mmap_info.path);
+        free(cpath);
         return 1;
     }
 
@@ -159,7 +214,6 @@ int shared_sender(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     // I keep the lock on signal_wrtr, reader arrived and I can start writing
     
     int idx = 0;
-    FILE* fstr = fopen(settings.filename, "rb");
     do
     { // I have lock on active[idx] (and signal_wrtr.lock)
         size_t n_r = fread(&(copy->space[copy->width * idx]),
@@ -204,6 +258,18 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     free(mmap_info.path);
     close(lockfd);
     
+    FILE* fstr = fopen(settings.filename, "w");
+    if (fstr == NULL){
+        perror(NULL);
+        err_and_leave("Couldn't open input stream", 5);
+    }
+    int rt = ftruncate(fileno(fstr), 0);
+    if (rt != 0){
+        perror(NULL);
+        err_and_leave("Error in ftruncate", 5);
+    }
+    //printf("Opened file\n");
+    
     pthread_mutex_lock(&(coord->lock)); // Prevent any other thread from joining
     pthread_mutex_lock(&(coord->reader_ready.lock));
     if (coord->reader_ready.v != 0){
@@ -222,16 +288,18 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     }
     pthread_mutex_unlock(&(coord->writer_ready.lock));
 
-    char *path = path_copy(settings.password);
     int fdm;
     { // Create file for shared_memory
+        char *path = path_copy(settings.password);
         fdm = shm_open(path, O_RDWR , 0660);
+        free(path);
         //printf("opn_cp_shm %d %d\n", fdm, errno);
         if (fdm == -1){
-            err_and_leave("Error when creating file-specific sharedmemory", 5);
+            perror(NULL);
+            err_and_leave("Error when accessing file-specific sharedmemory", 5);
         }
-        free(path);
     }
+
     copy_struct* copy = (copy_struct*) mmap(NULL, coord->mmap_size, PROT_READ | PROT_WRITE, MAP_SHARED, fdm, 0);
     
     pthread_mutex_lock(&(copy->leaving[1]));
@@ -244,9 +312,6 @@ int shared_receiver(setting_t settings, int lockfd, mmap_creat_ret_t mmap_info){
     close(mmap_info.fd_shared);
 
     // Here I'm only holding copy->leaving[1]
-    FILE* fstr = fopen(settings.filename, "w");
-    ftruncate(fileno(fstr), 0);
-    //printf("Opened file\n");
 
     int to_read = 1;
     int idx = 0;

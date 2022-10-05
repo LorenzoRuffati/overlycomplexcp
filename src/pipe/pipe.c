@@ -9,21 +9,6 @@
 
 #define BUFFSZ 256
 
-int use_pipe(setting_t settings){
-    //printf("usp %s\n", settings.password);
-    switch (settings.role) {
-        case SENDER:
-            return pipe_sender(settings);
-            break;
-        case RECEIVER:
-            return pipe_receiver(settings);
-            break;
-        default:
-            err_and_leave("Impossible role", 4);
-    }
-    return 0;
-}
-
 char* fifo_name(char* passwd){
     //printf("ffn %s\n", passwd);
     char* myfifo = "/tmp/myfifo_";
@@ -33,9 +18,34 @@ char* fifo_name(char* passwd){
     // copy myfifo into new_string
     // concatenate passwd to new_string
     char* new_string = malloc(strlen(myfifo) + strlen(passwd) + 1);
+    if (new_string == NULL){
+        perror(NULL);
+        err_and_leave("Malloc failed", 4);
+    }
     strcpy(new_string, myfifo);
     strcat(new_string, passwd);
     return new_string;
+}
+
+int use_pipe(setting_t settings){
+    //printf("usp %s\n", settings.password);
+    char *fn;
+    switch (settings.role) {
+        case SENDER:
+            return pipe_sender(settings);
+            break;
+        case RECEIVER:
+            return pipe_receiver(settings);
+            break;
+        case CLEANER:
+            fn = fifo_name(settings.password);
+            unlink(fn);
+            free(fn);
+            break;
+        default:
+            err_and_leave("Impossible role", 4);
+    }
+    return 0;
 }
 
 char* create_fifo(char* passwd){
@@ -51,6 +61,7 @@ char* create_fifo(char* passwd){
             break;
         default:
             printf("%d\n", errno);
+            free(new_string);
             err_and_leave("Failed to create pipe", 4);
             break;
         }
@@ -64,8 +75,15 @@ int pipe_sender(setting_t settings){
     int fd_in, fd_fifo;
     char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_WRONLY, 0);
+    free(fifon);
+    if (fd_fifo == -1){
+        err_and_leave("Can't open FIFO", 4);
+    }
     //printf("Opened\n");
     fd_in = open_file(settings.filename, O_RDONLY, 0);
+    if (fd_in == -1){
+        err_and_leave("Can't open input file", 4);
+    }
 
     char buffer[BUFFSZ]; // 
     size_t read_position = 0;
@@ -101,11 +119,22 @@ int pipe_receiver(setting_t settings){
     int fd_out, fd_fifo;
     char* fifon = create_fifo(settings.password);
     fd_fifo = open_file(fifon, O_RDONLY, 0);
+    if (fd_fifo == -1){
+        free(fifon);
+        err_and_leave("Can't open FIFO", 4);
+    }
     //printf("Opened\n");
     fd_out = open_file(settings.filename, O_WRONLY | O_APPEND | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IWGRP | S_IRGRP);
+    if (fd_out == -1){
+        free(fifon);
+        err_and_leave("Can't open output file", 4);
+    }
     char buffer[BUFFSZ];
     
     FILE* stream = fdopen(fd_fifo, "r");
+    if (stream == NULL){
+       err_and_leave("Couldn't open fifo stream", 4);
+    }
     
     while (1) {
         int n_read = fread(buffer, 1, BUFFSZ, stream);
@@ -115,7 +144,8 @@ int pipe_receiver(setting_t settings){
         //printf("Read %d bytes\n", n_read);
         int n_write = write_chunk(fd_out, n_read, buffer);
         if (n_write != n_read){
-            err_and_leave("Incompatible read and write", 4);
+            free(fifon);
+            err_and_leave("Incompatible read and write", 4);           
         }
         //printf("Wrote: %.*s\n", n_read, buffer);
         //sleep(3);
@@ -123,11 +153,6 @@ int pipe_receiver(setting_t settings){
     fclose(stream);
     close(fd_out);
     unlink(fifon);
+    free(fifon);
     return 0;
 }
-/*
-echo "hi pipes" > test_in.txt
-builddir/ocp -f test_in.txt --pass 123 --method p -r s
-builddir/ocp -f test_out.txt --pass 123 --method p -r r
-cat test_out.txt
-*/

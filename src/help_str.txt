@@ -15,6 +15,7 @@ Options:
     options are:
     + r, for receiver
     + s, for sender
+    + c, for cleaner, use this if the program is not working after a failure
 
 --method <method>, -m <method>
     Specify the IPC method to use, only the first letter of the method
